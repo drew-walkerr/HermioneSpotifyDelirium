@@ -1,5 +1,8 @@
 #Spotify Code for Hermione Granger
 
+
+#R Spotify Code
+
 ##Install packages, do this once on new computer
 install.packages("devtools")
 devtools::install_github('charlie86/spotifyr')
@@ -7,20 +10,20 @@ install.packages("knitr")
 install.packages("tidyverse")
 install.packages("data.table")
 
-#Begin selection here to run daily 
+#Begin selection here and extend to bottom of page to run daily. This section below assures the commands are sourced in loaded packages
 library(data.table)
 library(devtools)
 library(spotifyr)
 library(knitr)
 library(tidyverse)
-#Need ^^ (spotifyr), knitr, tidyverse
+
+#This sets up system env variables that grant our app authorization to pull GET requests from Spotify API
 Sys.setenv(SPOTIFY_CLIENT_ID = '2c46a5d6764f425ab746a56a1c8791b9')
 Sys.setenv(SPOTIFY_CLIENT_SECRET = '9b809cd5be004e8fbbc72ad74b0e19a7')
 
 access_token <- get_spotify_access_token(client_id = Sys.getenv("SPOTIFY_CLIENT_ID"),
                                          client_secret = Sys.getenv("SPOTIFY_CLIENT_SECRET"))
-##This below should give the app authorization
-
+#This begins the authorization process, linked to the account most recently signed in
 get_my_recently_played(limit = 50) %>% 
   select(track_name, artist_name, album_name, played_at_utc) %>% 
   kable()
@@ -30,23 +33,31 @@ get_my_recently_played(limit = 50) %>%
 ##2: No"
 ## Then, Respond with 1
 1
-#This works 
+#This fetches the 50 most recently played 
 myrecent50 <- get_my_recently_played(limit=50)
-#This works
 
-###NEXT We will do an audio analysis on all the songs and make that its own data frame from track.id variables in the myrecent50
+####NEXT We will do an audio analysis on all the songs and make that its own data frame from track.id variables in the myrecent50
 
-#SThis works-- pulls the audiofeatures of the recent 50 by track id
+#This pulls the audiofeatures of the recent 50 by track.id
 audiofeaturesrecent50 <-get_track_audio_features(myrecent50$track.id)
+#Now I change the column names for audiofeaturesrecent50 from "id" to track.id so it links up
+colnames(audiofeaturesrecent50)[which(names(audiofeaturesrecent50) == "id")] <- "track.id"
 
-#This works-- this is the myrecent50 song list as well as a full audio analysis for every track
-Hermionetotal <- merge(myrecent50,audiofeaturesrecent50)
-#trying to make name generated for total, with date.)
-csvFileName <- paste("Hermionetotal",format(Sys.time(),"%d-%b-%Y %H.%M"),".csv")
-#So it seems like this name worked, but in the line below there is an error in getting a full rundown of the table
-Hermionetotal <- data.frame(Hermionetotal)
-#All checked so far
 
-Hermionetotal <- apply(Hermionetotal,2,as.character)
-write.csv(Hermionetotal, file = csvFileName)
+#Next we merge the recent 50 and their audiofeatures into one big table 
+total <- merge(myrecent50,audiofeaturesrecent50,sort=FALSE)
+#And remove the duplicate values
+total <- distinct(total,played_at, .keep_all = TRUE)
+#Now i need to sort it by played_at, decreasing in value to sync up with .csv
+#I make an R object that is essentially the index order I want the file to be in
+ndx <- order(total$played_at,decreasing = TRUE)
+total <- total[ndx,]
+#Then we make a title element that updates with the timestamp of the data pull
+csvFileName <- paste("HermioneGranger",format(Sys.time(),"%d-%b-%Y %H.%M"),".csv")
+#Next we'll make sure this table is a data frame 
+total <- data.frame(total)
+#Some columns are lists that can't be translated to csv so we flatten those columns
+total <- apply(total,2,as.character)
+#and we make the csv that will be saved in the working directory 
+write.csv(total, file = csvFileName)
 #End selection to run daily 
