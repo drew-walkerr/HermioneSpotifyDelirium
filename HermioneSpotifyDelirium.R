@@ -33,6 +33,8 @@ get_my_recently_played(limit = 50) %>%
 ##2: No"
 ## Then, Respond with 1
 1
+##Then, it will ask you if you'd like to save the token locally
+1
 #This fetches the 50 most recently played 
 myrecent50 <- get_my_recently_played(limit=50)
 
