@@ -52,7 +52,7 @@ playlists <- get_my_playlists(limit = 20)
 #That should open up the browser. 
 #Now, we need to make sure we are selecting the playlist that is the last.fm pull
 playlist_id <- "5D2y9WkW79chB4XpaRG54Y"
-
+#Playlist URI:  spotify:playlist:5D2y9WkW79chB4XpaRG54Y
 
 get_playlist_tracks <- function(playlist_id, fields = NULL, limit = 100, offset = 0, market = NULL, authorization = get_spotify_access_token(), include_meta_info = FALSE) {
   base_url <- 'https://api.spotify.com/v1/playlists'
@@ -75,15 +75,23 @@ get_playlist_tracks <- function(playlist_id, fields = NULL, limit = 100, offset 
 }
 
 
-function
+get_playlist_tracks(playlist_id = "5D2y9WkW79chB4XpaRG54Y")
+)
+
+#this
+audio_features <-get_playlist_audio_features(drewdacris, playlist_uris = "spotify:playlist:5D2y9WkW79chB4XpaRG54Y",
+  authorization = get_spotify_access_token())
+
+
+##This 
+lastfmplaylist <- get_playlist("5D2y9WkW79chB4XpaRG54Y")
 
 
 
 
 
 
-
-
+##Future resolve below
 
 
 ####This next section I believe should try to get top tags for each artist 
