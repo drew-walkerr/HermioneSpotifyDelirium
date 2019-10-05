@@ -9,7 +9,7 @@ library(readr)
 library(tibble)
 library(urltools)
 library(jsonlite)
-library(memoise)
+
 
 #Next we'll install and check the packages from the Spotifyr package that we made
 
@@ -34,10 +34,18 @@ library(tidyverse)
 my_data <- scrobbler::download_scrobbles(username = "thedrewwalker", api_key = "50d7685d484772f2ff42c45891b31c7b")
 #so this works. Note that the time value is 4 hours ahead. Can we just adjust that here?
 #Research converting time- research what sort of data the time is 
-###BELOW HERE DOESN'T WORK YET, it's to grab the genre if we can!
+
+# create function for getting song features
+
+artist <- my_data$artist
+title <- my_data$song_title
 
 
 
+# create a version of this function which can handle errors
+possible_af <- possibly(track_audio_features, otherwise = tibble())
+
+track_audio_features(artist,title, type = "track")
 
 
 #This sets up system env variables that grant our app authorization to pull GET requests from Spotify API
@@ -49,50 +57,59 @@ access_token <- get_spotify_access_token(client_id = Sys.getenv("SPOTIFY_CLIENT_
 playlists <- get_my_playlists(limit = 20)
 #That will ask you to enter 1
 1
-#That should open up the browser. 
+#That should open up the browser. #This will also give us a dataframe of the playlists, where we'll find the one we're interestd in capturing and record the playlist id
 #Now, we need to make sure we are selecting the playlist that is the last.fm pull
 playlist_id <- "5D2y9WkW79chB4XpaRG54Y"
 #Playlist URI:  spotify:playlist:5D2y9WkW79chB4XpaRG54Y
 
-get_playlist_tracks <- function(playlist_id, fields = NULL, limit = 100, offset = 0, market = NULL, authorization = get_spotify_access_token(), include_meta_info = FALSE) {
-  base_url <- 'https://api.spotify.com/v1/playlists'
-  url <- str_glue('{base_url}/{playlist_id}/tracks')
-  params <- list(
-    fields = paste0('items(', paste0(fields, collapse = ','), ')'),
-    limit = limit,
-    offset = offset,
-    market = market,
-    access_token = authorization
-  )
-  res <- RETRY('GET', url, query = params, encode = 'json')
-  stop_for_status(res)
-  res <- fromJSON(content(res, as = 'text', encoding = 'UTF-8'), flatten = TRUE)
-  
-  if (!include_meta_info) {
-    res <- res$items
-  }
-  return(res)
-}
 
-
-get_playlist_tracks(playlist_id = "5D2y9WkW79chB4XpaRG54Y")
-)
 
 #this
+
+audiofeatures <- get_playlist_audio_features(drewdacris,"5D2y9WkW79chB4XpaRG54Y")
 audio_features <-get_playlist_audio_features(drewdacris, playlist_uris = "spotify:playlist:5D2y9WkW79chB4XpaRG54Y",
   authorization = get_spotify_access_token())
 
 
-##This 
+
+
+##This works to get a big database large list file-- super big tho 
 lastfmplaylist <- get_playlist("5D2y9WkW79chB4XpaRG54Y")
 
 
+#We want to try to work with this list into something we can extract the track uri ##
+flatlastfmplaylist <- flatten(lastfmplaylist)
 
+lastfmplaylisttibble <- tibble(lastfmplaylist$tracks$items$track.uri, lastfmplaylist$tracks$items$track.artists, lastfmplaylist$tracks$items$track.id, lastfmplaylist$tracks$items$track.album.name)
+
+
+#this is wheer I realize the problem that we can only pull 100 songs at a time from the playlist. Our next step here is how to repeatedly call each set of 100 songs
+
+
+
+
+lastfmplaylist2 <- get_playlist("5D2y9WkW79chB4XpaRG54Y", offset = 100)
+
+
+
+
+get_playlist_audio_features(drewdacris, "5D2y9WkW79chB4XpaRG54Y")
+
+#how to set up getting the track
+
+
+lastfmplaylisttracks <- get_playlist_tracks("5D2y9WkW79chB4XpaRG54Y")
+
+
+
+audiofeatures <- get_playlist_audio_features(drewdacris, "5D2y9WkW79chB4XpaRG54Y")
+
+get_playlist_audio_features()
 
 
 
 ##Future resolve below
-
+audioanalysis <- get_track_audio_analysis(lastfmplaylist$tracks$items$track.id, authorization = get_spotify_access_token())
 
 ####This next section I believe should try to get top tags for each artist 
 ##This is all code from last-fm-api.R We are just trying it all out. Make sure to update api_key values
@@ -116,16 +133,6 @@ build_track_toptags_query <- function(artist, track, base = "http://ws.audioscro
   return(base)
 }
 
-
-build_track_info_query <- function(artist, track, base = "http://ws.audioscrobbler.com/2.0/") {
-  base <- param_set(base, "method", "track.getInfo")
-  base <- param_set(base, "artist", URLencode(artist))
-  base <- param_set(base, "track", URLencode(track))
-  base <- param_set(base, "api_key", "50d7685d484772f2ff42c45891b31c7b")
-  base <- param_set(base, "format", "json")
-  
-  return(base)
-}
 
 fetch_artist_toptags <- function(artist) {
   print(paste0("Fetching ", artist))
