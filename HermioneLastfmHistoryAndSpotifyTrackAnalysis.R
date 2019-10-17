@@ -2,6 +2,7 @@
 #To do this, you need to get the last.fm data first. to do that we can merge the data from another R script
 #We need to update this so that it works for the entire list of 1700 songs and artists. Also need to be able to resolve all the instances of garbled data-- maybe my code already does this?
 #Find track spotify id, audio features, from song artist and title
+install.packages("packrat")
 install.packages("tidyverse")
 install.packages("devtools")
 devtools::install_github('charlie86/spotifyr')
@@ -10,7 +11,6 @@ install.packages("purrr")
 install.packages("dplyr")
 install.packages("Rcpp")
 install.packages("knitr")
-install.packages("packrat")
 #Added Library installation of package "Rcpp" due to error code in work computer-- may not need if we install Rtools first
 
 library(packrat)
@@ -26,6 +26,7 @@ library(lubridate)
 library(packrat)
 packrat::init
 packrat::snapshot
+packrat::restore
 #This is how we create function for searching spotify to get song features
 track_audio_features <- function(artist, title, type = "track") {
   search_results <- search_spotify(paste(artist, title), type = type)
