@@ -2,7 +2,6 @@
 #To do this, you need to get the last.fm data first. to do that we can merge the data from another R script
 #We need to update this so that it works for the entire list of 1700 songs and artists. Also need to be able to resolve all the instances of garbled data-- maybe my code already does this?
 #Find track spotify id, audio features, from song artist and title
-packrat::init()
 install.packages("tidyverse")
 install.packages("devtools")
 devtools::install_github('charlie86/spotifyr')
@@ -12,9 +11,8 @@ install.packages("dplyr")
 install.packages("Rcpp")
 install.packages("knitr")
 install.packages("packrat")
-
 #Added Library installation of package "Rcpp" due to error code in work computer-- may not need if we install Rtools first
-library(packrat)
+
 library(tidyverse)
 library(devtools)
 library(spotifyr)
@@ -24,7 +22,6 @@ library(dplyr)
 library(Rcpp)
 library(knitr)
 library(lubridate)
-packrat::snapshot()
 
 #This is how we create function for searching spotify to get song features
 track_audio_features <- function(artist, title, type = "track") {
@@ -42,6 +39,8 @@ my_data <- scrobbler::download_scrobbles(username = "thedrewwalker", api_key = "
 #This sets up system env variables that grant our app authorization to pull GET requests from Spotify API
 Sys.setenv(SPOTIFY_CLIENT_ID = '2c46a5d6764f425ab746a56a1c8791b9')
 Sys.setenv(SPOTIFY_CLIENT_SECRET = '9b809cd5be004e8fbbc72ad74b0e19a7')
+access_token <- get_spotify_access_token(client_id = Sys.getenv("SPOTIFY_CLIENT_ID"), 
+                                         client_secret = Sys.getenv("SPOTIFY_CLIENT_SECRET"))
 
 #This begins the authorization process, linked to the account most recently signed in
 
@@ -56,9 +55,10 @@ totalaudio_features <- my_data %>%
 
 #This works! Although we are missing 9 observations-- 9 songs in this data set, I'm guessing ones that were unable to find-- can we change the tibble that the function produces for incomplete songs in the possibly? 
 #The following code will create one huge .csv file
-#This index does not work-- because the date format does not decrease in any chronological order-- can fix by converting to table
-total_audiofeatures
-
+#Now we will change the dates given by last.fm to UTC timestamps. It's worth noting we are only accurate to the minute
+totalaudio_features$date <- dmy_hm(totalaudio_features$date)
+#Now we'll convert to change to US Timezone for easier data analysis
+totalaudio_features$date <- with_tz(totalaudio_features$date, tzone = "US/Eastern")
 total <- totalaudio_features
 #Then we make a title element that updates with the timestamp of the data pull
 csvFileName <- paste("HermioneGranger",format(Sys.time(),"%d-%b-%Y %H.%M"),".csv")
