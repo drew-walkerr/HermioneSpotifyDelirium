@@ -13,6 +13,7 @@ install.packages("knitr")
 install.packages("packrat")
 #Added Library installation of package "Rcpp" due to error code in work computer-- may not need if we install Rtools first
 
+library(packrat)
 library(tidyverse)
 library(devtools)
 library(spotifyr)
@@ -22,7 +23,9 @@ library(dplyr)
 library(Rcpp)
 library(knitr)
 library(lubridate)
-
+library(packrat)
+packrat::init
+packrat::snapshot
 #This is how we create function for searching spotify to get song features
 track_audio_features <- function(artist, title, type = "track") {
   search_results <- search_spotify(paste(artist, title), type = type)
