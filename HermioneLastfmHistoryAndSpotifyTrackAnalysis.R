@@ -2,7 +2,7 @@
 #To do this, you need to get the last.fm data first. to do that we can merge the data from another R script
 #We need to update this so that it works for the entire list of 1700 songs and artists. Also need to be able to resolve all the instances of garbled data-- maybe my code already does this?
 #Find track spotify id, audio features, from song artist and title
-install.packages("packrat")
+install.packages("checkpoint")
 install.packages("tidyverse")
 install.packages("devtools")
 devtools::install_github('charlie86/spotifyr')
@@ -13,7 +13,7 @@ install.packages("Rcpp")
 install.packages("knitr")
 #Added Library installation of package "Rcpp" due to error code in work computer-- may not need if we install Rtools first
 
-library(packrat)
+
 library(tidyverse)
 library(devtools)
 library(spotifyr)
@@ -23,10 +23,8 @@ library(dplyr)
 library(Rcpp)
 library(knitr)
 library(lubridate)
-library(packrat)
-packrat::init
-packrat::snapshot
-packrat::restore
+library(checkpoint)
+checkpoint("2019-10-17")
 #This is how we create function for searching spotify to get song features
 track_audio_features <- function(artist, title, type = "track") {
   search_results <- search_spotify(paste(artist, title), type = type)
@@ -57,7 +55,7 @@ totalaudio_features <- my_data %>%
   unnest() %>% 
   as_tibble()
 
-#This works! Although we are missing 9 observations-- 9 songs in this data set, I'm guessing ones that were unable to find-- can we change the tibble that the function produces for incomplete songs in the possibly? 
+##This works! Although we are missing 9 observations-- 9 songs in this data set, I'm guessing ones that were unable to find-- can we change the tibble that the function produces for incomplete songs in the possibly? 
 #The following code will create one huge .csv file
 #Now we will change the dates given by last.fm to UTC timestamps. It's worth noting we are only accurate to the minute
 totalaudio_features$date <- dmy_hm(totalaudio_features$date)
