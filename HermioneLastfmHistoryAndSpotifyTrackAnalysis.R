@@ -49,7 +49,7 @@ access_token <- get_spotify_access_token(client_id = Sys.getenv("SPOTIFY_CLIENT_
 colnames(my_data)
 colnames(my_data)[colnames(my_data)=="song_title"] <- "title"
 ##Now, we'll make a function that applys the search track audio features through the rows of artists and track titles. 
-possible_feats <- possibly(track_audio_features, otherwise = tibble())
+possible_feats <- possibly(track_audio_features, otherwise = tibble("NA"))
 totalaudio_features <- my_data %>%
   mutate(audio_features = map2(artist, title, possible_feats)) %>%
   unnest() %>% 
