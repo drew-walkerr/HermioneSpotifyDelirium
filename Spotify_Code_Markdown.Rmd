@@ -1,0 +1,111 @@
+---
+title: "Music For Delirium Management in the Pediatric Critical Care Unit"
+author: "Drew Walker"
+date: "10/29/2019"
+output:
+  html_document: default
+  pdf_document: default
+---
+## R Script for Collecting detailed track audio features for a user's entire listening history through Spotify and  Last.fm
+
+Prior to setting up this code, one should [register their application through Last.fm API ](https://www.last.fm/api/) and [Spotify's API](https://developer.spotify.com/documentation/web-api/)
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Packages
+This script utilizes these packages to call data from the Spotify and Last.fm APIs, applying functions across lists and dataframes, and more. Two partiularly important pakages are  [spotifyr](https://github.com/charlie86/spotifyr) and  [scrobbler](https://github.com/condwanaland/scrobbler). 
+```{r, install-packages, eval=FALSE, cache=TRUE}
+install.packages("checkpoint")
+install.packages("tidyverse")
+install.packages("devtools")
+devtools::install_github('charlie86/spotifyr')
+devtools::install_github("condwanaland/scrobbler")
+install.packages("purrr")
+install.packages("dplyr")
+install.packages("Rcpp")
+install.packages("knitr")
+```
+Now we'll make sure we are loading the packages. 
+```{r, load-packages, eval=FALSE,cache=TRUE}
+library(tidyverse)
+library(devtools)
+library(spotifyr)
+library(scrobbler)
+library(purrr)
+library(dplyr)
+library(Rcpp)
+library(knitr)
+library(lubridate)
+```
+
+##Search Spotify Function
+We'll create the function for searching spotify to get song features
+```{r, eval=FALSE,cache=TRUE}
+track_audio_features <- function(artist, title, type = "track") {
+  search_results <- search_spotify(paste(artist, title), type = type)
+  track_audio_feats <- get_track_audio_features(search_results$id[[1]]) %>%
+    dplyr::select(-id, -uri, -track_href, -analysis_url)
+  return(track_audio_feats)
+}
+# Use possibly() purrr function which can handle errors in search
+possible_af <- possibly(track_audio_features, otherwise = tibble())
+```
+##Last.fm API user history, or "scrobble""
+Now we will "scrobble" the last.fm history, which will allow us to call the Last.fm API to get a history a all of the songs recorded through Last.fm (via synch with Spotify Account)
+To do this, you'll first need to approve your application [here](https://www.last.fm/api/account/create)
+```{r,cache=TRUE, eval=FALSE}
+
+my_data <- scrobbler::download_scrobbles(username = "INSERT Last.fm User", api_key = "xxxxxxxxxxxxxxxxxxx")
+```
+##Spotify API access token
+Now we'll assign system env variables that will be used to grant our app authorization to pull GET requests from Spotify API, enabling us to search tracks and return specific track info.
+```{r, eval=FALSE,cache=TRUE}
+Sys.setenv(SPOTIFY_CLIENT_ID = '2c46a5d6764f425ab746a56a1c8791b9')
+Sys.setenv(SPOTIFY_CLIENT_SECRET = '9b809cd5be004e8fbbc72ad74b0e19a7')
+```
+This will create the token we'll use to make Spotify API request, which will be refreshed upon each run.
+```{r, eval=FALSE,cache=TRUE}
+access_token <- get_spotify_access_token(client_id = Sys.getenv("SPOTIFY_CLIENT_ID"),
+                                         client_secret = Sys.getenv("SPOTIFY_CLIENT_SECRET"))
+```
+##Prepare Last.fm data to merge with Spotify track_audio_features
+We need to edit the column names in the Last.fm pull to match with Spotify track to title to enable merging
+```{r, eval=FALSE,cache=TRUE}
+colnames(my_data)
+colnames(my_data)[colnames(my_data)=="song_title"] <- "title"
+```
+##Applying the Spotify track_audio_features function to all songs in Last.fm history
+Now, we'll make a function that applys the search track audio features through the rows of artists and track titles in the last.fm data frame. This will return the first search result after entering in artist and track in the Spotify Database, identify the track.id in Spotify, and merge the Spotify track audio features (measures of loudness, acousticness, key, tempo, time signature, danceability, valence, instrumentalness, etc). This process will take the longest of the code, likely 5-10 minutes, depending on how large the last.fm library is. 
+```{r, echo=TRUE, eval=FALSE,cache=TRUE}
+possible_feats <- possibly(track_audio_features, otherwise = tibble())
+totalaudio_features <- my_data %>%
+  mutate(audio_features = map2(artist, title, possible_feats)) %>%
+  unnest() %>% 
+  as_tibble()
+```
+#Clean data, convert timestamp 
+
+```{r, echo=TRUE, eval=FALSE,cache=TRUE}
+#Now we will change the dates given by last.fm to UTC timestamps. Accuracy is to the minute.
+totalaudio_features$date <- dmy_hm(totalaudio_features$date)
+#Now we'll convert to change to US Timezone from UTC
+totalaudio_features$date <- with_tz(totalaudio_features$date, tzone = "US/Eastern")
+total <- totalaudio_features
+```
+#Now we'll create a .csv file of data that is date and timestamped  
+```{r, eval=FALSE,cache=TRUE}
+#Then we make a title element that updates with the timestamp of the data pull
+csvFileName <- paste("DrewsData",format(Sys.time(),"%d-%b-%Y %H.%M"),".csv")
+#Next we'll make sure this table is a data frame 
+total <- data.frame(total)
+#Some columns are lists that can't be translated to csv so we flatten those columns
+total <- apply(total,2,as.character)
+#and we make the csv that will be saved in the working directory 
+write.csv(total, file = csvFileName)```
+```
+#Thank you for your interest in this research. If you'd like to learn more, please contact Drew Walker at andrew.walker@peds.ufl.edu
+
+
+
