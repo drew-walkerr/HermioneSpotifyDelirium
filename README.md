@@ -1,5 +1,2 @@
-# HermioneSpotifyDelirium
-Pulling data from Hermione's account
-
-This repository consists of code relating to pulling the last.fm account listening history and spotify track audio features data into one large dataframe for the PICU Spotify delirium project from the account Hermione. 
-
+# PICUDeliriumAndMusicAnalysis
+Pulls Last.fm/Spotify detailed user listening history and track analysis for use in the PICU Music and Delirium Research study
