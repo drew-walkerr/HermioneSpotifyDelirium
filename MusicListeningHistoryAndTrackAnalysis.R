@@ -37,7 +37,7 @@ track_audio_features <- function(artist, title, type = "track") {
 possible_af <- possibly(track_audio_features, otherwise = tibble())
 #
 #Now we will "scrobble" the last.fm history, which will give us a all of the songs recorded through last.fm
-my_data <- scrobbler::download_scrobbles(username = "INSERT-USER", api_key = "50d7685d484772f2ff42c45891b31c7b")
+my_data <- scrobbler::download_scrobbles(username = "INSERTUSER", api_key = "50d7685d484772f2ff42c45891b31c7b")
 
 #This sets up system env variables that grant our app authorization to pull GET requests from Spotify API
 Sys.setenv(SPOTIFY_CLIENT_ID = '2c46a5d6764f425ab746a56a1c8791b9')
