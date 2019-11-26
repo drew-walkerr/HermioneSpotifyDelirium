@@ -1,7 +1,5 @@
-#This function works to identify the spotify track solely from artist and track title! 
-#To do this, you need to get the last.fm data first. to do that we can merge the data from another R script
-#We need to update this so that it works for the entire list of 1700 songs and artists. Also need to be able to resolve all the instances of garbled data-- maybe my code already does this?
-#Find track spotify id, audio features, from song artist and title
+#This is the script to pull a user's last.fm music scrobble (entire listening history), and then search each track using song title and artist name in spotify's database, to return a reverse chronological list of songs with corresponding detailed music analysis data. 
+#Written by Drew Walker
 install.packages("checkpoint")
 install.packages("tidyverse")
 install.packages("devtools")
@@ -56,7 +54,6 @@ totalaudio_features <- my_data %>%
   unnest() %>% 
   as_tibble()
 
-##This works! Although we are missing 9 observations-- 9 songs in this data set, I'm guessing ones that were unable to find-- can we change the tibble that the function produces for incomplete songs in the possibly? 
 #The following code will create one huge .csv file
 #Now we will change the dates given by last.fm to UTC timestamps. It's worth noting we are only accurate to the minute
 totalaudio_features$date <- dmy_hm(totalaudio_features$date)
@@ -71,3 +68,4 @@ total <- data.frame(total)
 total <- apply(total,2,as.character)
 #and we make the csv that will be saved in the working directory 
 write.csv(total, file = csvFileName)
+#©Copyright September 12th, 2019, University of Florida Research Foundation, Inc. All Rights Reserved.
