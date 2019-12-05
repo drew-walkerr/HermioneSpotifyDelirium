@@ -1,6 +1,7 @@
 #This is the script to pull a user's last.fm music scrobble (entire listening history), and then search each track using song title and artist name in spotify's database, to return a reverse chronological list of songs with corresponding detailed music analysis data. 
 #Written by Drew Walker
-install.packages("checkpoint")
+packrat::status()
+#Shouldn't need to use these if you use packrat file from github
 install.packages("tidyverse")
 install.packages("devtools")
 devtools::install_github('charlie86/spotifyr')
@@ -9,6 +10,7 @@ install.packages("purrr")
 install.packages("dplyr")
 install.packages("Rcpp")
 install.packages("knitr")
+install.packages("lubridate")
 #Added Library installation of package "Rcpp" due to error code in work computer-- may not need if we install Rtools first
 #if installing for first time, this "checkpoint" package helps us load and install the other necessary packages 
 
@@ -21,7 +23,7 @@ library(dplyr)
 library(Rcpp)
 library(knitr)
 library(lubridate)
-packrat::snapshot
+packrat::snapshot()
 #This is how we create function for searching spotify to get song features
 track_audio_features <- function(artist, title, type = "track") {
   search_results <- search_spotify(paste(artist, title), type = type)
