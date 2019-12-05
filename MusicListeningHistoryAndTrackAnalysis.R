@@ -10,8 +10,6 @@ install.packages("dplyr")
 install.packages("Rcpp")
 install.packages("knitr")
 #Added Library installation of package "Rcpp" due to error code in work computer-- may not need if we install Rtools first
-library(checkpoint)
-checkpoint("2019-10-17")
 #if installing for first time, this "checkpoint" package helps us load and install the other necessary packages 
 
 library(tidyverse)
@@ -23,19 +21,17 @@ library(dplyr)
 library(Rcpp)
 library(knitr)
 library(lubridate)
-
+packrat::snapshot
 #This is how we create function for searching spotify to get song features
 track_audio_features <- function(artist, title, type = "track") {
   search_results <- search_spotify(paste(artist, title), type = type)
-  track_audio_feats <- get_track_audio_features(search_results$id[[1]]) %>%
-    dplyr::select(-uri, -track_href, -analysis_url)
+  track_audio_feats <- get_track_audio_features(search_results$id[[1]])
   return(track_audio_feats)
 }
 # create a version of this function which can handle errors
 possible_af <- possibly(track_audio_features, otherwise = tibble())
-#
 #Now we will "scrobble" the last.fm history, which will give us a all of the songs recorded through last.fm
-my_data <- scrobbler::download_scrobbles(username = "INSERTUSER", api_key = "50d7685d484772f2ff42c45891b31c7b")
+my_data <- scrobbler::download_scrobbles(username = "thedrewwalker", api_key = "50d7685d484772f2ff42c45891b31c7b")
 
 #This sets up system env variables that grant our app authorization to pull GET requests from Spotify API
 Sys.setenv(SPOTIFY_CLIENT_ID = '2c46a5d6764f425ab746a56a1c8791b9')
@@ -61,7 +57,7 @@ totalaudio_features$date <- dmy_hm(totalaudio_features$date)
 totalaudio_features$date <- with_tz(totalaudio_features$date, tzone = "US/Eastern")
 total <- totalaudio_features
 #Then we make a title element that updates with the timestamp of the data pull
-csvFileName <- paste("INSERT-USER",format(Sys.time(),"%d-%b-%Y %H.%M"),".csv")
+csvFileName <- paste("DrewMusic",format(Sys.time(),"%d-%b-%Y %H.%M"),".csv")
 #Next we'll make sure this table is a data frame 
 total <- data.frame(total)
 #Some columns are lists that can't be translated to csv so we flatten those columns

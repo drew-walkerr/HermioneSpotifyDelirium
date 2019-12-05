@@ -1,0 +1,9 @@
+check_py_script	check_py_script
+convert	convert
+download_scrobbles	download_scrobbles
+fetch_tracks	fetch_tracks
+find_py_script	find_py_script
+install_scrobble_script	install_scrobble_script
+py_path	py_path
+py_version	py_version
+read_scrobbles	read_scrobbles
