@@ -96,11 +96,6 @@ Version: 1.1.0
 Hash: be9d203e7849f73818b36f93e9273c2c
 Requires: rematch, tibble
 
-Package: checkpoint
-Source: CRAN
-Version: 0.4.7
-Hash: 4c8f53ca447de5fd9f58cfe9da83ab2d
-
 Package: cli
 Source: CRAN
 Version: 1.1.0
