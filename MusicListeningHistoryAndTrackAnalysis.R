@@ -33,7 +33,7 @@ track_audio_features <- function(artist, title, type = "track") {
 # create a version of this function which can handle errors
 possible_af <- possibly(track_audio_features, otherwise = tibble())
 #Now we will "scrobble" the last.fm history, which will give us a all of the songs recorded through last.fm
-my_data <- scrobbler::download_scrobbles(username = "thedrewwalker", api_key = "50d7685d484772f2ff42c45891b31c7b")
+my_data <- scrobbler::download_scrobbles(username = "INSERTUSER", api_key = "50d7685d484772f2ff42c45891b31c7b")
 
 #This sets up system env variables that grant our app authorization to pull GET requests from Spotify API
 Sys.setenv(SPOTIFY_CLIENT_ID = '2c46a5d6764f425ab746a56a1c8791b9')
@@ -59,7 +59,7 @@ totalaudio_features$date <- dmy_hm(totalaudio_features$date)
 totalaudio_features$date <- with_tz(totalaudio_features$date, tzone = "US/Eastern")
 total <- totalaudio_features
 #Then we make a title element that updates with the timestamp of the data pull
-csvFileName <- paste("DrewMusic",format(Sys.time(),"%d-%b-%Y %H.%M"),".csv")
+csvFileName <- paste("USERMusic",format(Sys.time(),"%d-%b-%Y %H.%M"),".csv")
 #Next we'll make sure this table is a data frame 
 total <- data.frame(total)
 #Some columns are lists that can't be translated to csv so we flatten those columns
