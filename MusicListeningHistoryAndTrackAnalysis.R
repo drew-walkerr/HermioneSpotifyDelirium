@@ -30,7 +30,7 @@ library(tictoc)
 #Initiate packrat snapshot for version control 
 packrat::status()
 packrat::snapshot()
-# DATA PULL FUNTIONS -----------------------------------------
+# Spotify Search Function -----------------------------------------
 track_audio_features <- function(artist, title, type = "track") {
   search_results <- search_spotify(paste(artist, title), type = type)
   track_audio_feats <- get_track_audio_features(search_results$id[[1]])
@@ -38,11 +38,8 @@ track_audio_features <- function(artist, title, type = "track") {
 }
 # create a version of this function which can handle errors
 possible_af <- possibly(track_audio_features, otherwise = tibble())
-# scrobbler and spotify API---------------------------------------------------------------
-#Now we will "scrobble" the last.fm history, which will give us a all of the songs recorded through last.fm
-#LunaLove_UF
-#HermioneG_UF
-my_data <- scrobbler::download_scrobbles(username = "HermioneG_UF", api_key = "50d7685d484772f2ff42c45891b31c7b")
+# scrobbler and spotify API. username = "last.fm username"---------------------------------------------------------------
+my_data <- scrobbler::download_scrobbles(username = "USERNAME", api_key = "50d7685d484772f2ff42c45891b31c7b")
 #This sets up system env variables that grant our app authorization to pull GET requests from Spotify API
 Sys.setenv(SPOTIFY_CLIENT_ID = '2c46a5d6764f425ab746a56a1c8791b9')
 Sys.setenv(SPOTIFY_CLIENT_SECRET = '9b809cd5be004e8fbbc72ad74b0e19a7')
@@ -66,10 +63,10 @@ toc()
 totalaudio_features$date <- dmy_hm(totalaudio_features$date)
 #Now we'll convert to change to US Timezone for easier data analysis
 totalaudio_features$date <- with_tz(totalaudio_features$date, tzone = "US/Eastern")
-#Then we make a title element that updates with the timestamp of the data pull
-csvFileName <- paste("HermioneG",format(Sys.time(),"%d-%b-%Y %H.%M"),".csv")
-#Next we'll make sure this table is a data frame 
-#Some columns are lists that can't be translated to csv so we flatten those columns
+#Then we make a title element that updates with the timestamp of the data pull. MAKE SURE YOU CHANGE USER HERE
+
+# CHANGE USER FOR FILENAMING ------------------------------------------------
+csvFileName <- paste("USERNAME",format(Sys.time(),"%d-%b-%Y %H.%M"),".csv")
 #and we make the csv that will be saved in the working directory 
 write.csv(totalaudio_features, file = csvFileName)
 #©Copyright September 12th, 2019, University of Florida Research Foundation, Inc. All Rights Reserved.
