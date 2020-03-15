@@ -56,3 +56,11 @@ Drewdata %>%
 
   =
 dateplayed <- as.Date(Drewdata$date)
+  
+
+# Shelton Data ------------------------------------------------------------
+SheltonData <- read.csv("SheltonMusic 14-Mar-2020 18.47 .csv")
+  
+(Sheltonsummary <- summary.data.frame(SheltonData))
+
+
