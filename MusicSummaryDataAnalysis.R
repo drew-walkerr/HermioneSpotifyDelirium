@@ -7,9 +7,45 @@ library(lubridate)
 my_data -> Drewdata
 
 Drewdata <- read.csv("DrewMusic 09-Mar-2020 22.26 .csv")
-as.data.frame(Drewsummary)
+
+
+as_datetime(Drewdata$date)
+# Separating Dates into Components, adding Year, month, day variables ----------------------------------------
+
+Drewdata <- Drewdata %>% 
+  mutate(year = year(date), month = month(date), day = day(date), hour = hour(date))
+
+Drewdata
+
+ggplot(data = Drewdata) +
+  geom_point(mapping = aes(x = hour, y = valence, color = year))
+
+typeof(hour)
+
+Drewdata %>% 
+  hist(hour)
+
+summary(Drewdata$hour)
+
+hist(Drewdata$hour)
+
+# DREWDATA VISUALIZATIONS -----------------------------------------------------
+
+
+
+
+
+Drewdata %>% 
+  group_by(year) %>% 
+
+
+
+
+
+
 
 view(Drewsummary)
+
 
 summary <- Drewdata %>% 
   summarise()
