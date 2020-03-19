@@ -63,4 +63,7 @@ SheltonData <- read.csv("SheltonMusic 14-Mar-2020 18.47 .csv")
   
 (Sheltonsummary <- summary.data.frame(SheltonData))
 
+SheltonData %>% 
+  mutate(,year = year(date))
+
 
