@@ -61,9 +61,15 @@ dateplayed <- as.Date(Drewdata$date)
 # Shelton Data ------------------------------------------------------------
 SheltonData <- read.csv("SheltonMusic 14-Mar-2020 18.47 .csv")
   
+as_datetime(SheltonData$date)
+# Separating Dates into Components, adding Year, month, day variables ----------------------------------------
+
+SheltonData2 <- SheltonData %>% 
+  mutate(year = year(date), month = month(date), day = day(date), hour = hour(date))
+
+
+# Summarizing and Exploring Data ------------------------------------------
+
+
 (Sheltonsummary <- summary.data.frame(SheltonData))
-
-SheltonData %>% 
-  mutate(,year = year(date))
-
 
