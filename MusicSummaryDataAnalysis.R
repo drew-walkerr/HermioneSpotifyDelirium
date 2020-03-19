@@ -71,5 +71,6 @@ SheltonData2 <- SheltonData %>%
 # Summarizing and Exploring Data ------------------------------------------
 
 
+
 (Sheltonsummary <- summary.data.frame(SheltonData))
 
