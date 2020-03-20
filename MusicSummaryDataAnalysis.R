@@ -10,15 +10,12 @@ Drewdata <- read.csv("DrewMusic 09-Mar-2020 22.26 .csv")
 
 
 as_datetime(Drewdata$date)
-# Separating Dates into Components, adding Year, month, day variables ----------------------------------------
 
+# ADDING SESSION VARIABLES -------------------------------------
 #Convert duration_ms to millisecond period value 
 milli <- dmilliseconds(Drewdata$duration_ms)
-#WOrkable sparsing hours and days and months 
 
-# WORKING ANALYSIS TRACK SESSION CODE -------------------------------------
-
-
+#adding variables to start to create the intervals
 Drewdata <- Drewdata %>% 
   mutate(year = year(date), 
          month = month(date), 
@@ -28,57 +25,21 @@ Drewdata <- Drewdata %>%
          recentstart = as_datetime(date),
          end = (as_datetime(date) + milli),
          last_theo_end = lead(end))
-         
+#make time.interval object between when the previous song could have theoretically ended and the start of the track played most recently to indicate if there was time after it finished playing or was skipped
 time.interval <- Drewdata$last_theo_end %--% Drewdata$recentstart
-
-
+#Create variable that is the difference between start time and theoretical last time played in duration
 Drewdata <- Drewdata %>% 
-  mutate(diff = as.duration(time.interval),
-         
-  
-         diff = dmilliseconds(Drewdata$last_play - Drewdata$recentstart)
-  )
+  mutate(diff = as.duration(time.interval))
+#REORDER
+Drewdata <- arrange(Drewdata, date) 
+#ASSIGN SESSION LABELS 
+Drewdata <- Drewdata %>% mutate(new_interval = diff > as.duration(3600),
+                      new_interval = ifelse(is.na(new_interval), FALSE, new_interval),
+                      session_number = cumsum(new_interval))
 
-str(time.interval)
-
-as.duration(time.interval)
-
-summary(Drewdata$diff)
-
-#Workable interval code
-
-Drewdata <- Drewdata %>% 
-  mutate(last_play = lead(date), start = date, end = (as_datetime(date) + milli))
-
-#Trying differences
-
-typeof(Drewdata$start)
-
-Drewdata <- Drewdata %>% 
-  mutate(diff = dmilliseconds(Drewdata$start %--% Drewdata$lagged_date))
-
-typeof(Drewdata$start)
-typeof(lagged_date)
-a
-#funky
-diff = start - lagged_date,
-new_interval = diff > 5,
-new_interval = ifelse(is.na(new_interval), FALSE, new_interval),
-interval_number = cumsum(new_interval))
-
-
-typeof(Drewdata$duration_ms)
-
-asinte
-
-
-
-Drewdata <- Drewdata %>% 
-  mutate(end = (as_datetime(date) + milli))
-
-, start = date, end = (date + duration_ms))d
-
-as_datetime(Drewdata$date) + milli
+#Basically trying to recreate this  
+#https://stackoverflow.com/questions/37168305/group-date-intervals-by-the-proximity-of-their-start-and-end-times 
+#create interval to indicate new interval if greater than 1 hour
 
 
 # VISUALIZATIONS ----------------------------------------------------------
