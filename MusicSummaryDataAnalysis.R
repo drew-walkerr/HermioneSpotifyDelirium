@@ -55,7 +55,8 @@ session_summary <- session_summary %>%
 # VISUALIZATIONS ----------------------------------------------------------
 
 ggplot(data = session_summary) +
-  geom_point(mapping = aes(x = firstsongdatetime, y = session_valence_mean, color = sessionmonth))
+  geom_point(mapping = aes(x = firstsongdatetime, y = session_valence_mean, color = sessionmonth) +
+               geom_smooth(se = FALSE)
 
 
 
