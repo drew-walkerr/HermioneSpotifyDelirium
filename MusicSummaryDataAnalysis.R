@@ -57,15 +57,6 @@ session_summary <- session_summary %>%
 ggplot(data = session_summary) +
   geom_point(mapping = aes(x = firstsongdatetime, y = session_valence_mean, color = sessionmonth))
 
-typeof(hour)
-
-Drewdata %>% 
-  hist(hour)
-
-summary(Drewdata$hour)
-
-
-plot(Drewdata$year)
 
 
 # Shelton Data ------------------------------------------------------------
