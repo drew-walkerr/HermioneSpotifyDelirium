@@ -1,11 +1,6 @@
 library(tidyverse)
 library(lubridate)
 
-
-
-
-my_data -> Drewdata
-
 Drewdata <- read.csv("DrewMusic 09-Mar-2020 22.26 .csv")
 
 
@@ -37,9 +32,21 @@ Drewdata <- Drewdata %>% mutate(new_interval = diff > as.duration(3600),
                       new_interval = ifelse(is.na(new_interval), FALSE, new_interval),
                       session_number = cumsum(new_interval))
 
+#Summarizing session numbers
+by_session_number <- group_by(Drewdata, session_number, recentstart, end)
+
+
+
+
+
 #Basically trying to recreate this  
 #https://stackoverflow.com/questions/37168305/group-date-intervals-by-the-proximity-of-their-start-and-end-times 
 #create interval to indicate new interval if greater than 1 hour
+
+#Finding session midpoints!!? 
+for session_number
+
+
 
 
 # VISUALIZATIONS ----------------------------------------------------------
