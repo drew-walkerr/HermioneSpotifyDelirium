@@ -31,30 +31,31 @@ Drewdata <- arrange(Drewdata, date)
 Drewdata <- Drewdata %>% mutate(new_interval = diff > as.duration(3600),
                       new_interval = ifelse(is.na(new_interval), FALSE, new_interval),
                       session_number = cumsum(new_interval))
-
-#Summarizing session numbers
-by_session_number <- group_by(Drewdata, session_number, recentstart, end)
-
-
-
-
-
-#Basically trying to recreate this  
-#https://stackoverflow.com/questions/37168305/group-date-intervals-by-the-proximity-of-their-start-and-end-times 
-#create interval to indicate new interval if greater than 1 hour
-
-#Finding session midpoints!!? 
-for session_number
-
+#Summarizing session variable summaries, session lengths, session midpoints 
+by_session_number <- group_by(Drewdata, session_number)
+session_summary <- summarise(by_session_number,
+                   count = n(),
+                   session_valence_mean = mean(valence, na.rm = TRUE),
+                   session_energy_mean = mean(energy, na.rm = TRUE),
+                   session_key_mean = mean(key, na.rm = TRUE),
+                   session_loudness_mean = mean(loudness, na.rm = TRUE),
+                   sessionmonth = mean(month, na.rm = TRUE),
+                   lastsongdatetime = max(end, na.rm = TRUE),
+                   firstsongdatetime = min(recentstart, na.rm = TRUE))
+#Making session length duration objects
+sessionlength <- session_summary$firstsongdatetime %--% session_summary$lastsongdatetime
+midpointinterval <- sessionlength/2
+#Adding session duration, midpointdatetime variables
+session_summary <- session_summary %>% 
+  mutate(midpointdatetime = firstsongdatetime + as.duration(midpointinterval),
+         duration = as.duration(sessionlength))
 
 
 
 # VISUALIZATIONS ----------------------------------------------------------
 
-
-
-ggplot(data = Drewdata) +
-  geom_point(mapping = aes(x = hour, y = valence, color = year))
+ggplot(data = session_summary) +
+  geom_point(mapping = aes(x = firstsongdatetime, y = session_valence_mean, color = sessionmonth))
 
 typeof(hour)
 
@@ -63,99 +64,9 @@ Drewdata %>%
 
 summary(Drewdata$hour)
 
-hist(Drewdata$year, )
 
 plot(Drewdata$year)
 
-# DREWDATA VISUALIZATIONS -----------------------------------------------------
-
-
-
-
-
-Drewdata %>% 
-  group_by(year) %>% 
-
-
-
-
-
-
-
-view(Drewsummary)
-
-
-summary <- Drewdata %>% 
-  summarise()
-
-view(as.table(Drewsummary))
-
-out <- capture.output(summary.data.frame(Drewdata))
-cat("Drewsummary", out, file="Drewsummaries.txt", sep="n", append=TRUE)
-
-#Taking summary making it an r object, table chr [1:7, 1:27]
-Drewsummary <- summary.data.frame(Drewdata)
-
-Drewsummary %>% 
-  select(Var2,Freq)
-
-
-newdf <- select(Drewsummary, 
-
-
-#Make summary file
-write.csv(as.table(Drewsummary),"Drewsummary")
-
-write.table(Drewsummary, file = "summary.txt")
-
-#
-
-sink(Drewsummary)
-print(Drewsummary)
-sink()  #
-
-
-
-Drewdata
-
-view(summary)
-
-as.Date.character(Drewdata$date)
-
-Drewdata %>% 
-  mutate(date <-)
-  group_by(date) %>% 
-  
-  summarise(…)
-
-  =
-
-
-# DrewData Time Listening sessions ----------------------------------------
-dateplayed <- as.Datetime(Drewdata$date)
-  
-as_datetime(Drewdata$date)
-  
-i <- interval()
-
-typeof(Drewdata$duration_ms)
-
-
-Drewdata <- 
-  Drewdata %>% 
-  mutate(lagged_date = lag(date))
-
-, start = date, end = (date + duration_ms))d
-
-#new 
-Df %>% 
-        diff = start - lagged_end,
-         new_interval = diff > 5,
-         new_interval = ifelse(is.na(new_interval), FALSE, new_interval),
-         interval_number = cumsum(new_interval))
-  
-  
-Drewdata
 
 # Shelton Data ------------------------------------------------------------
 SheltonData <- read.csv("SheltonMusic 14-Mar-2020 18.47 .csv")
