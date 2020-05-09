@@ -1,0 +1,90 @@
+---
+title: "TrackHistoryPull"
+author: "Drew Walker"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(devtools)
+library(spotifyr)
+library(scrobbler)
+library(purrr)
+library(dplyr)
+library(Rcpp)
+library(knitr)
+library(lubridate)
+library(furrr)
+library(tictoc)
+```
+
+## Creating Functions
+Creates function to search through spotify by artist, title, and return the first track on the list. Creates failsafe to produce a tibble() if it doesn't work.
+```{r tracksearch function}
+track_audio_features <- function(artist, title, type = "track") {
+  search_results <- search_spotify(paste(artist, title), type = type)
+  track_audio_feats <- get_track_audio_features(search_results$id[[1]])
+  return(track_audio_feats)
+}
+# create a version of this function which can handle errors
+possible_af <- possibly(track_audio_features, otherwise = tibble())
+```
+
+## Last.fm pull
+*Change USER for filenaming to your Last.fm account name 
+* download_scrobbles(username = "USER")
+```{r Lastfmpull, echo=FALSE}
+my_data <- scrobbler::download_scrobbles(username = "thedrewwalker", api_key = "50d7685d484772f2ff42c45891b31c7b")
+```
+
+
+#This sets up system env variables that grant our app authorization to pull GET requests from Spotify API
+```{r systemenvironments}
+Sys.setenv(SPOTIFY_CLIENT_ID = '2c46a5d6764f425ab746a56a1c8791b9')
+Sys.setenv(SPOTIFY_CLIENT_SECRET = '9b809cd5be004e8fbbc72ad74b0e19a7')
+access_token <- get_spotify_access_token(client_id = Sys.getenv("SPOTIFY_CLIENT_ID"), 
+                                         client_secret = Sys.getenv("SPOTIFY_CLIENT_SECRET"))
+#prepare last.fm df for merge
+colnames(my_data)
+colnames(my_data)[colnames(my_data)=="song_title"] <- "title"
+```
+
+Now, we'll make a function that applys the search track audio features through the rows of artists and track titles.
+
+# Mapping search function -------------------------------------------------
+```{r mappingsearchfunction}
+tic()
+future::plan(multiprocess)
+possible_feats <- possibly(track_audio_features, otherwise = tibble("NA"))
+totalaudio_features <- my_data %>%
+  mutate(audio_features = future_map2(artist, title, possible_feats)) %>%
+  unnest() %>% 
+  as_tibble()
+toc()
+```
+The following code will create one huge .csv file
+We will also change the dates given by last.fm to UTC timestamps, EST to match clinical study data. *It's worth noting we are only accurate to the minute
+```{r timezoneadjust}
+totalaudio_features$date <- dmy_hm(totalaudio_features$date)
+#Now we'll convert to change to US Timezone for easier data analysis
+totalaudio_features$date <- with_tz(totalaudio_features$date, tzone = "US/Eastern")
+#Then we make a title element that updates with the timestamp of the data pull. MAKE SURE YOU CHANGE USER HERE
+```
+#Create .csv of music history data
+*CHANGE USER FOR FILENAMING 
+```{r filecreation}
+csvFileName <- paste("User",format(Sys.time(),"%d-%b-%Y %H.%M"),".csv")
+#and we make the csv that will be saved in the working directory 
+write.csv(totalaudio_features, file = csvFileName)
+#©Copyright September 12th, 2019, University of Florida Research Foundation, Inc. All Rights Reserved.
+```
+#TheData
+```{r showdata}
+totalaudio_features
+```
+
+

@@ -1,0 +1,85 @@
+---
+title: "TrackHistoryDataAnalysis"
+author: "Drew Walker"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+library(tidyverse)
+library(lubridate)
+```
+
+#Load in Data Frame
+Loads in Data frame. This is done by the last data pull done, but we can definitely change it to read in a .csv 
+```{r dataload}
+Drewdata <- totalaudio_features
+```
+
+#Data Transformation
+*This creates multiple data frames that describe the music data set
+**Drewdata: master dataframe with all songs, the year, month, date, day, hour, last_play, recentstart, end, theoretical end of last song, new interval, and session number.
+***Basically, this is ascribing "Music Listening Sessions", by identifying songs played within 1 hour (3600s).
+****Can find this value in new_interval = diff > as.duration(3600).
+```{r Lastfmpull, echo=FALSE}
+as_datetime(Drewdata$date)
+
+# ADDING SESSION VARIABLES -------------------------------------
+#Convert duration_ms to millisecond period value 
+milli <- dmilliseconds(Drewdata$duration_ms)
+
+#adding variables to start to create the intervals
+Drewdata <- Drewdata %>% 
+  mutate(year = year(date), 
+         month = month(date), 
+         day = day(date), 
+         hour = hour(date),
+         last_play = lead(date), 
+         recentstart = as_datetime(date),
+         end = (as_datetime(date) + milli),
+         last_theo_end = lead(end))
+#make time.interval object between when the previous song could have theoretically ended and the start of the track played most recently to indicate if there was time after it finished playing or was skipped
+time.interval <- Drewdata$last_theo_end %--% Drewdata$recentstart
+#Create variable that is the difference between start time and theoretical last time played in duration
+Drewdata <- Drewdata %>% 
+  mutate(diff = as.duration(time.interval))
+#REORDER
+Drewdata <- arrange(Drewdata, date) 
+#ASSIGN SESSION LABELS 
+Drewdata <- Drewdata %>% mutate(new_interval = diff > as.duration(3600),
+                      new_interval = ifelse(is.na(new_interval), FALSE, new_interval),
+                      session_number = cumsum(new_interval))
+```
+#Summarizing session variable summaries, session lengths, session midpoints 
+*Creates session_summary data frame, which is a dataframe where rows are different music listening sessions in this data set. We summarise the session valence, energy, key, loudness, sessionmonth, lastsongdate time and first songdatetimer
+```{r session summaries}
+#Summarizing session variable summaries, session lengths, session midpoints 
+by_session_number <- group_by(Drewdata, session_number)
+session_summary <- summarise(by_session_number,
+                   count = n(),
+                   session_valence_mean = mean(valence, na.rm = TRUE),
+                   session_energy_mean = mean(energy, na.rm = TRUE),
+                   session_key_mean = mean(key, na.rm = TRUE),
+                   session_loudness_mean = mean(loudness, na.rm = TRUE),
+                   sessionmonth = mean(month, na.rm = TRUE),
+                   lastsongdatetime = max(end, na.rm = TRUE),
+                   firstsongdatetime = min(recentstart, na.rm = TRUE))
+#Making session length duration objects
+sessionlength <- session_summary$firstsongdatetime %--% session_summary$lastsongdatetime
+midpointinterval <- sessionlength/2
+#Adding session duration, midpointdatetime variables
+session_summary <- session_summary %>% 
+  mutate(midpointdatetime = firstsongdatetime + as.duration(midpointinterval),
+         duration = as.duration(sessionlength))
+```
+#Visualizations
+Next, we need to do visualizations (interactive) of these dataframes.
+*Need to find ways to repel the labels of these visualizations (with the repeller package)
+*May look back on the tidytuesday posts for the spotify data
+*Ways to identify tops of certain categories
+*Ways to identify most popular songs in different categories (Favorite upbeat song, favorite sad song) 
+
