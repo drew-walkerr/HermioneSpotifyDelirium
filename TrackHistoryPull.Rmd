@@ -86,5 +86,10 @@ write.csv(totalaudio_features, file = csvFileName)
 ```{r showdata}
 totalaudio_features
 ```
+```{r, save_data_for_transformation}
+save.image(file = "raw_music_pull_data.RData")
+
+```
+
 
 

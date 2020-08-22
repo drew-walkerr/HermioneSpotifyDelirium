@@ -2,13 +2,14 @@
 title: "TrackHistoryDataAnalysis"
 author: "Drew Walker"
 output:
-  word_document: default
-  pdf_document: default
   html_document: default
+  pdf_document: default
+  word_document: default
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 ---
 
 ```{r setup, include=FALSE}
+load("raw_music_pull_data.RData")
 library(knitr)
 library(tidyverse)
 library(lubridate)
@@ -16,7 +17,7 @@ library(lubridate)
 
 #Load in Data Frame
 Loads in Data frame. This is done by the last data pull done, but we can definitely change it to read in a .csv 
-```{r dataload}
+```{r dataload, results= "hide"}
 Drewdata <- totalaudio_features
 ```
 
@@ -25,7 +26,7 @@ Drewdata <- totalaudio_features
 **Drewdata: master dataframe with all songs, the year, month, date, day, hour, last_play, recentstart, end, theoretical end of last song, new interval, and session number.
 ***Basically, this is ascribing "Music Listening Sessions", by identifying songs played within 1 hour (3600s).
 ****Can find this value in new_interval = diff > as.duration(3600).
-```{r Lastfmpull, echo=FALSE}
+```{r Lastfmpull, echo=TRUE, include=FALSE}
 as_datetime(Drewdata$date)
 
 # ADDING SESSION VARIABLES -------------------------------------
@@ -80,22 +81,38 @@ session_summary <- session_summary %>%
   mutate(midpointdatetime = firstsongdatetime + as.duration(midpointinterval),
          duration = as.duration(sessionlength))
 ```
-
+##Most Popular Artists and Songs
 ```{r, song_and_artist_popularity, include=TRUE}
 top25artists <- Drewdata %>% 
   group_by(artist) %>% 
   summarize(
   across(where(is.numeric), mean)) %>% 
   slice_max(artist_play_count, n = 25)
-```
 
-```{r, song_and_artist_popularity, include=TRUE}
+p_top25artists_play_count <- ggplot(data = top25artists, aes(reorder(artist, artist_play_count), y = artist_play_count, fill = artist, label = artist_play_count))+
+  geom_col(show.legend = TRUE)+
+  geom_text(aes(label = artist_play_count))+
+  labs(x = NULL, y = NULL) +
+  ggtitle(paste("Your Top Played Artists by Number of Plays"))+
+  coord_flip()
+p_top25artists_play_count
+ggsave("top25artists.png")
+
 #For some reason, this seems to be less accurate than artist values
-top25songs <- Drewdata %>% 
+top10songs <- Drewdata %>% 
   group_by(title) %>% 
   summarize(
   across(where(is.numeric), mean)) %>% 
-  slice_max(song_play_count, n = 25)
+  slice_max(song_play_count, n = 10, with_ties = FALSE)
+
+p_top10songs_play_count <- ggplot(data = top10songs, aes(reorder(title, song_play_count), y = song_play_count, fill = title, label = song_play_count))+
+  geom_col(show.legend = FALSE)+
+  geom_text(aes(label = song_play_count))+
+  labs(x = NULL, y = NULL) +
+  ggtitle(paste("Your Top Played Songs by Number of Plays"))+
+  coord_flip()
+p_top10songs_play_count
+ggsave("top25songs.png")
 ```
 
 #Visualizations
