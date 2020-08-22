@@ -41,7 +41,11 @@ Drewdata <- Drewdata %>%
          last_play = lead(date), 
          recentstart = as_datetime(date),
          end = (as_datetime(date) + milli),
-         last_theo_end = lead(end))
+         last_theo_end = lead(end)) %>%
+  add_count(id) %>% 
+  rename(song_play_count = n) %>%
+  add_count(artist) %>% 
+  rename(artist_play_count = n)
 #make time.interval object between when the previous song could have theoretically ended and the start of the track played most recently to indicate if there was time after it finished playing or was skipped
 time.interval <- Drewdata$last_theo_end %--% Drewdata$recentstart
 #Create variable that is the difference between start time and theoretical last time played in duration
@@ -76,6 +80,11 @@ session_summary <- session_summary %>%
   mutate(midpointdatetime = firstsongdatetime + as.duration(midpointinterval),
          duration = as.duration(sessionlength))
 ```
+
+```{r, song_and_artist_popularity, include=TRUE}
+
+```
+
 #Visualizations
 Next, we need to do visualizations (interactive) of these dataframes.
 *Need to find ways to repel the labels of these visualizations (with the repeller package)
