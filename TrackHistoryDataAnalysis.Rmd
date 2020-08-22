@@ -82,7 +82,20 @@ session_summary <- session_summary %>%
 ```
 
 ```{r, song_and_artist_popularity, include=TRUE}
+top25artists <- Drewdata %>% 
+  group_by(artist) %>% 
+  summarize(
+  across(where(is.numeric), mean)) %>% 
+  slice_max(artist_play_count, n = 25)
+```
 
+```{r, song_and_artist_popularity, include=TRUE}
+#For some reason, this seems to be less accurate than artist values
+top25songs <- Drewdata %>% 
+  group_by(title) %>% 
+  summarize(
+  across(where(is.numeric), mean)) %>% 
+  slice_max(song_play_count, n = 25)
 ```
 
 #Visualizations
