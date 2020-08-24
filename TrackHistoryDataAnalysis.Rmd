@@ -18,23 +18,23 @@ library(lubridate)
 #Load in Data Frame
 Loads in Data frame. This is done by the last data pull done, but we can definitely change it to read in a .csv 
 ```{r dataload, results= "hide"}
-Drewdata <- totalaudio_features
+raw_music_pull_dataframe <- totalaudio_features
 ```
 
 #Data Transformation
 *This creates multiple data frames that describe the music data set
-**Drewdata: master dataframe with all songs, the year, month, date, day, hour, last_play, recentstart, end, theoretical end of last song, new interval, and session number.
+**raw_music_pull_dataframe: master dataframe with all songs, the year, month, date, day, hour, last_play, recentstart, end, theoretical end of last song, new interval, and session number.
 ***Basically, this is ascribing "Music Listening Sessions", by identifying songs played within 1 hour (3600s).
 ****Can find this value in new_interval = diff > as.duration(3600).
 ```{r Lastfmpull, echo=TRUE, include=FALSE}
-as_datetime(Drewdata$date)
+as_datetime(raw_music_pull_dataframe$date)
 
 # ADDING SESSION VARIABLES -------------------------------------
 #Convert duration_ms to millisecond period value 
-milli <- dmilliseconds(Drewdata$duration_ms)
+milli <- dmilliseconds(raw_music_pull_dataframe$duration_ms)
 
 #adding variables to start to create the intervals
-Drewdata <- Drewdata %>% 
+raw_music_pull_dataframe <- raw_music_pull_dataframe %>% 
   mutate(year = year(date), 
          month = month(date), 
          day = day(date), 
@@ -48,14 +48,14 @@ Drewdata <- Drewdata %>%
   add_count(artist) %>% 
   rename(artist_play_count = n)
 #make time.interval object between when the previous song could have theoretically ended and the start of the track played most recently to indicate if there was time after it finished playing or was skipped
-time.interval <- Drewdata$last_theo_end %--% Drewdata$recentstart
+time.interval <- raw_music_pull_dataframe$last_theo_end %--% raw_music_pull_dataframe$recentstart
 #Create variable that is the difference between start time and theoretical last time played in duration
-Drewdata <- Drewdata %>% 
+raw_music_pull_dataframe <- raw_music_pull_dataframe %>% 
   mutate(diff = as.duration(time.interval))
 #REORDER
-Drewdata <- arrange(Drewdata, date) 
+raw_music_pull_dataframe <- arrange(raw_music_pull_dataframe, date) 
 #ASSIGN SESSION LABELS 
-Drewdata <- Drewdata %>% mutate(new_interval = diff > as.duration(3600),
+raw_music_pull_dataframe <- raw_music_pull_dataframe %>% mutate(new_interval = diff > as.duration(3600),
                       new_interval = ifelse(is.na(new_interval), FALSE, new_interval),
                       session_number = cumsum(new_interval))
 ```
@@ -63,7 +63,7 @@ Drewdata <- Drewdata %>% mutate(new_interval = diff > as.duration(3600),
 *Creates session_summary data frame, which is a dataframe where rows are different music listening sessions in this data set. We summarise the session valence, energy, key, loudness, sessionmonth, lastsongdate time and first songdatetimer
 ```{r session summaries}
 #Summarizing session variable summaries, session lengths, session midpoints 
-by_session_number <- group_by(Drewdata, session_number)
+by_session_number <- group_by(raw_music_pull_dataframe, session_number)
 session_summary <- summarise(by_session_number,
                    count = n(),
                    session_valence_mean = mean(valence, na.rm = TRUE),
@@ -81,9 +81,57 @@ session_summary <- session_summary %>%
   mutate(midpointdatetime = firstsongdatetime + as.duration(midpointinterval),
          duration = as.duration(sessionlength))
 ```
+```{r, dailysummaries}
+#Creating daily summary dataframe to group by date and days of week
+dailysummaries <- raw_music_pull_dataframe %>% 
+  mutate(justdate = ymd(as.Date(date)),
+         dayofweek = wday(as.Date(date),label = TRUE, abbr = FALSE))
+#Grouping by justdate
+dailysummaries_justdate <- dailysummaries %>% 
+  group_by(justdate) %>% 
+  summarise(dailyvalence_mean = mean(valence, na.rm =TRUE),
+            dailydanceability_mean = mean(danceability, na.rm =TRUE)) %>% 
+  mutate(dayofweek = wday(as.Date(justdate),label = TRUE, abbr = FALSE))
+
+#Grouping by days of the week-- this one returns NAs for valence for some reason
+dailysummaries_weekdays <- dailysummaries_justdate %>% 
+  group_by(dayofweek) %>% 
+    summarise(weekdayvalence_mean = mean(dailyvalence_mean, na.rm = TRUE),
+              weekdaydanceability_mean = mean(dailydanceability_mean, na.rm = TRUE))
+```
+
+```{r valence,justdates, weekdays}
+valence_by_justdates <- ggplot(dailysummaries_justdate, aes(x = justdate, y = dailyvalence_mean)) +
+  labs(x = "Date", y = "Valence")+
+  geom_point(mapping = aes(color = dayofweek)) + 
+  geom_smooth()
+valence_by_justdates
+
+valence_by_dayofweek <- ggplot(dailysummaries_weekdays, aes(x = dayofweek, y = weekdayvalence_mean, fill = dayofweek, label = dayofweek))+
+  geom_col(show.legend = TRUE)+
+  labs(x = NULL, y = NULL) +
+  ggtitle(paste("Mean Valence by Day of Week"))
+valence_by_dayofweek
+```
+
+```{r danceability,justdates, weekdays}
+danceability_by_justdates <- ggplot(dailysummaries_justdate, aes(x = justdate, y = dailydanceability_mean)) +
+  labs(x = "Date", y = "Danceability")+
+  geom_point(mapping = aes(color = dayofweek)) + 
+  geom_smooth()
+danceability_by_justdates
+
+danceability_by_dayofweek <- ggplot(dailysummaries_weekdays, aes(x = dayofweek, y = weekdaydanceability_mean, fill = dayofweek, label = dayofweek))+
+  geom_col(show.legend = TRUE)+
+  labs(x = NULL, y = NULL) +
+  ggtitle(paste("Mean Danceability by Day of Week"))
+danceability_by_dayofweek
+```
+
+
 ##Most Popular Artists and Songs
 ```{r, song_and_artist_popularity, include=TRUE}
-top25artists <- Drewdata %>% 
+top25artists <- raw_music_pull_dataframe %>% 
   group_by(artist) %>% 
   summarize(
   across(where(is.numeric), mean)) %>% 
@@ -99,7 +147,7 @@ p_top25artists_play_count
 ggsave("top25artists.png")
 
 #For some reason, this seems to be less accurate than artist values
-top10songs <- Drewdata %>% 
+top10songs <- raw_music_pull_dataframe %>% 
   group_by(title) %>% 
   summarize(
   across(where(is.numeric), mean)) %>% 
