@@ -1,0 +1,172 @@
+---
+title: "TrackHistoryDataAnalysis"
+author: "Drew Walker"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+---
+
+```{r setup, include=FALSE}
+load("raw_music_pull_data.RData")
+library(knitr)
+library(tidyverse)
+library(lubridate)
+```
+
+#Load in Data Frame
+Loads in Data frame. This is done by the last data pull done, but we can definitely change it to read in a .csv 
+```{r dataload, results= "hide"}
+raw_music_pull_dataframe <- totalaudio_features
+```
+
+#Data Transformation
+*This creates multiple data frames that describe the music data set
+**raw_music_pull_dataframe: master dataframe with all songs, the year, month, date, day, hour, last_play, recentstart, end, theoretical end of last song, new interval, and session number.
+***Basically, this is ascribing "Music Listening Sessions", by identifying songs played within 1 hour (3600s).
+****Can find this value in new_interval = diff > as.duration(3600).
+```{r Lastfmpull, echo=TRUE, include=FALSE}
+as_datetime(raw_music_pull_dataframe$date)
+
+# ADDING SESSION VARIABLES -------------------------------------
+#Convert duration_ms to millisecond period value 
+milli <- dmilliseconds(raw_music_pull_dataframe$duration_ms)
+
+#adding variables to start to create the intervals
+raw_music_pull_dataframe <- raw_music_pull_dataframe %>% 
+  mutate(year = year(date), 
+         month = month(date), 
+         day = day(date), 
+         hour = hour(date),
+         last_play = lead(date), 
+         recentstart = as_datetime(date),
+         end = (as_datetime(date) + milli),
+         last_theo_end = lead(end)) %>%
+  add_count(id) %>% 
+  rename(song_play_count = n) %>%
+  add_count(artist) %>% 
+  rename(artist_play_count = n)
+#make time.interval object between when the previous song could have theoretically ended and the start of the track played most recently to indicate if there was time after it finished playing or was skipped
+time.interval <- raw_music_pull_dataframe$last_theo_end %--% raw_music_pull_dataframe$recentstart
+#Create variable that is the difference between start time and theoretical last time played in duration
+raw_music_pull_dataframe <- raw_music_pull_dataframe %>% 
+  mutate(diff = as.duration(time.interval))
+#REORDER
+raw_music_pull_dataframe <- arrange(raw_music_pull_dataframe, date) 
+#ASSIGN SESSION LABELS 
+raw_music_pull_dataframe <- raw_music_pull_dataframe %>% mutate(new_interval = diff > as.duration(3600),
+                      new_interval = ifelse(is.na(new_interval), FALSE, new_interval),
+                      session_number = cumsum(new_interval))
+```
+#Summarizing session variable summaries, session lengths, session midpoints 
+*Creates session_summary data frame, which is a dataframe where rows are different music listening sessions in this data set. We summarise the session valence, energy, key, loudness, sessionmonth, lastsongdate time and first songdatetimer
+```{r session summaries}
+#Summarizing session variable summaries, session lengths, session midpoints 
+by_session_number <- group_by(raw_music_pull_dataframe, session_number)
+session_summary <- summarise(by_session_number,
+                   count = n(),
+                   session_valence_mean = mean(valence, na.rm = TRUE),
+                   session_energy_mean = mean(energy, na.rm = TRUE),
+                   session_key_mean = mean(key, na.rm = TRUE),
+                   session_loudness_mean = mean(loudness, na.rm = TRUE),
+                   sessionmonth = mean(month, na.rm = TRUE),
+                   lastsongdatetime = max(end, na.rm = TRUE),
+                   firstsongdatetime = min(recentstart, na.rm = TRUE))
+#Making session length duration objects
+sessionlength <- session_summary$firstsongdatetime %--% session_summary$lastsongdatetime
+midpointinterval <- sessionlength/2
+#Adding session duration, midpointdatetime variables
+session_summary <- session_summary %>% 
+  mutate(midpointdatetime = firstsongdatetime + as.duration(midpointinterval),
+         duration = as.duration(sessionlength))
+```
+```{r, dailysummaries}
+#Creating daily summary dataframe to group by date and days of week
+dailysummaries <- raw_music_pull_dataframe %>% 
+  mutate(justdate = ymd(as.Date(date)),
+         dayofweek = wday(as.Date(date),label = TRUE, abbr = FALSE))
+#Grouping by justdate
+dailysummaries_justdate <- dailysummaries %>% 
+  group_by(justdate) %>% 
+  summarise(dailyvalence_mean = mean(valence, na.rm =TRUE),
+            dailydanceability_mean = mean(danceability, na.rm =TRUE)) %>% 
+  mutate(dayofweek = wday(as.Date(justdate),label = TRUE, abbr = FALSE))
+
+#Grouping by days of the week-- this one returns NAs for valence for some reason
+dailysummaries_weekdays <- dailysummaries_justdate %>% 
+  group_by(dayofweek) %>% 
+    summarise(weekdayvalence_mean = mean(dailyvalence_mean, na.rm = TRUE),
+              weekdaydanceability_mean = mean(dailydanceability_mean, na.rm = TRUE))
+```
+
+```{r valence,justdates, weekdays}
+valence_by_justdates <- ggplot(dailysummaries_justdate, aes(x = justdate, y = dailyvalence_mean)) +
+  labs(x = "Date", y = "Valence")+
+  geom_point(mapping = aes(color = dayofweek)) + 
+  geom_smooth()
+valence_by_justdates
+
+valence_by_dayofweek <- ggplot(dailysummaries_weekdays, aes(x = dayofweek, y = weekdayvalence_mean, fill = dayofweek, label = dayofweek))+
+  geom_col(show.legend = TRUE)+
+  labs(x = NULL, y = NULL) +
+  ggtitle(paste("Mean Valence by Day of Week"))
+valence_by_dayofweek
+```
+
+```{r danceability,justdates, weekdays}
+danceability_by_justdates <- ggplot(dailysummaries_justdate, aes(x = justdate, y = dailydanceability_mean)) +
+  labs(x = "Date", y = "Danceability")+
+  geom_point(mapping = aes(color = dayofweek)) + 
+  geom_smooth()
+danceability_by_justdates
+
+danceability_by_dayofweek <- ggplot(dailysummaries_weekdays, aes(x = dayofweek, y = weekdaydanceability_mean, fill = dayofweek, label = dayofweek))+
+  geom_col(show.legend = TRUE)+
+  labs(x = NULL, y = NULL) +
+  ggtitle(paste("Mean Danceability by Day of Week"))
+danceability_by_dayofweek
+```
+
+
+##Most Popular Artists and Songs
+```{r, song_and_artist_popularity, include=TRUE}
+top25artists <- raw_music_pull_dataframe %>% 
+  group_by(artist) %>% 
+  summarize(
+  across(where(is.numeric), mean)) %>% 
+  slice_max(artist_play_count, n = 25)
+
+p_top25artists_play_count <- ggplot(data = top25artists, aes(reorder(artist, artist_play_count), y = artist_play_count, fill = artist, label = artist_play_count))+
+  geom_col(show.legend = TRUE)+
+  geom_text(aes(label = artist_play_count))+
+  labs(x = NULL, y = NULL) +
+  ggtitle(paste("Your Top Played Artists by Number of Plays"))+
+  coord_flip()
+p_top25artists_play_count
+ggsave("top25artists.png")
+
+#For some reason, this seems to be less accurate than artist values
+top10songs <- raw_music_pull_dataframe %>% 
+  group_by(title) %>% 
+  summarize(
+  across(where(is.numeric), mean)) %>% 
+  slice_max(song_play_count, n = 10, with_ties = FALSE)
+
+p_top10songs_play_count <- ggplot(data = top10songs, aes(reorder(title, song_play_count), y = song_play_count, fill = title, label = song_play_count))+
+  geom_col(show.legend = FALSE)+
+  geom_text(aes(label = song_play_count))+
+  labs(x = NULL, y = NULL) +
+  ggtitle(paste("Your Top Played Songs by Number of Plays"))+
+  coord_flip()
+p_top10songs_play_count
+ggsave("top25songs.png")
+```
+
+#Visualizations
+Next, we need to do visualizations (interactive) of these dataframes.
+*Need to find ways to repel the labels of these visualizations (with the repeller package)
+*May look back on the tidytuesday posts for the spotify data
+*Ways to identify tops of certain categories
+*Ways to identify most popular songs in different categories (Favorite upbeat song, favorite sad song) 
+
