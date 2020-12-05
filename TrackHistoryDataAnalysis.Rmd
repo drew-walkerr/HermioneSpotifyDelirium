@@ -13,6 +13,9 @@ load("raw_music_pull_data.RData")
 library(knitr)
 library(tidyverse)
 library(lubridate)
+library(glmnet)
+install.packages("summ")
+library(summ)
 ```
 
 #Load in Data Frame
@@ -146,20 +149,18 @@ p_top25artists_play_count <- ggplot(data = top25artists, aes(reorder(artist, art
 p_top25artists_play_count
 ggsave("top25artists.png")
 
-#For some reason, this seems to be less accurate than artist values
-top10songs <- raw_music_pull_dataframe %>% 
-  group_by(title) %>% 
-  summarize(
-  across(where(is.numeric), mean)) %>% 
-  slice_max(song_play_count, n = 10, with_ties = FALSE)
 
-p_top10songs_play_count <- ggplot(data = top10songs, aes(reorder(title, song_play_count), y = song_play_count, fill = title, label = song_play_count))+
+#For some reason, this seems to be less accurate than artist values
+top25songs <- raw_music_pull_dataframe %>% 
+  slice_max(song_play_count, n = 25, with_ties = FALSE)
+
+p_top25songs_play_count <- ggplot(data = top25songs, aes(reorder(title, song_play_count), y = song_play_count, fill = title, label = song_play_count))+
   geom_col(show.legend = FALSE)+
   geom_text(aes(label = song_play_count))+
   labs(x = NULL, y = NULL) +
   ggtitle(paste("Your Top Played Songs by Number of Plays"))+
   coord_flip()
-p_top10songs_play_count
+p_top25songs_play_count
 ggsave("top25songs.png")
 ```
 
@@ -169,4 +170,48 @@ Next, we need to do visualizations (interactive) of these dataframes.
 *May look back on the tidytuesday posts for the spotify data
 *Ways to identify tops of certain categories
 *Ways to identify most popular songs in different categories (Favorite upbeat song, favorite sad song) 
+
+
+```{r, modeling}
+#EDA
+numbas <- raw_music_pull_dataframe %>% 
+  select(where(is.numeric)) %>% 
+  rename(music_key = key)
+
+histograms <- ggplot(gather(numbas), aes(value)) + 
+    geom_histogram(bins = 10) + 
+    facet_wrap(~key, scales = 'free_x')
+ggsave("histies.png", plot = histograms)
+library(sandwich)
+library(msm)
+#Primary model for song_play_count Outcome
+
+m1 <- glm(song_play_count ~ valence + danceability, family="poisson", data= numbas)
+#Confidence intervals 
+cov.m1 <- vcovHC(m1, type="HC0")
+std.err <- sqrt(diag(cov.m1))
+r.est <- cbind(Estimate= coef(m1), "Robust SE" = std.err,
+"Pr(>|z|)" = 2 * pnorm(abs(coef(m1)/std.err), lower.tail=FALSE),
+LL = coef(m1) - 1.96 * std.err,
+UL = coef(m1) + 1.96 * std.err)
+
+r.est
+
+#other models 
+valence_and_playcount <- summary(m1 <- glm(song_play_count ~ valence + danceability, family="poisson", data= numbas))
+
+liveness_on_song_play_count <- summary(m1 <- glm(song_play_count ~ loudness, family="poisson", data= numbas))
+liveness_on_song_play_count
+
+#categorical 
+fitty <- lm(valence ~ year, data =raw_music_pull_dataframe)
+fitty
+artist_playcount_and_playcount
+
+```
+
+```{r, crude regressions}
+
+```
+
 
