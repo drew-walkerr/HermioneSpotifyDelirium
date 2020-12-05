@@ -207,11 +207,6 @@ liveness_on_song_play_count
 fitty <- lm(valence ~ year, data =raw_music_pull_dataframe)
 fitty
 artist_playcount_and_playcount
-
-```
-
-```{r, crude regressions}
-
 ```
 
 
